@@ -1,0 +1,1003 @@
+{
+	"info": {
+		"_postman_id": "42e30dbb-2400-476e-bb86-06414154111a",
+		"name": "Philips Hue Remote",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Remote Authentication",
+			"item": [
+				{
+					"name": "Get Authorization Code",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "https://api.meethue.com/oauth2/auth?clientid={{ClientId}}&response_type=code&state=elvenanystring&appid={{AppId}}&deviceid={{DeviceId}}&devicename={{DeviceName}}",
+							"protocol": "https",
+							"host": [
+								"api",
+								"meethue",
+								"com"
+							],
+							"path": [
+								"oauth2",
+								"auth"
+							],
+							"query": [
+								{
+									"key": "clientid",
+									"value": "{{ClientId}}"
+								},
+								{
+									"key": "response_type",
+									"value": "code"
+								},
+								{
+									"key": "state",
+									"value": "elvenanystring"
+								},
+								{
+									"key": "appid",
+									"value": "{{AppId}}"
+								},
+								{
+									"key": "deviceid",
+									"value": "{{DeviceId}}"
+								},
+								{
+									"key": "devicename",
+									"value": "{{DeviceName}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Basic Auth Access Token",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "f2174cf9-d96c-44fa-a8e9-83c1b0f59cb7",
+								"exec": [
+									""
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"id": "23e82ce3-b819-4d12-aa88-4b88c3d6b020",
+								"exec": [
+									"// Get Access Token and Refresh Token from Response and Update Environment Variables\r",
+									"var json = JSON.parse(responseBody);\r",
+									"pm.environment.set(\"AccessToken\", json.access_token);\r",
+									"pm.environment.set(\"RefreshToken\", json.refresh_token);\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "{{ClientSecret}}",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "{{ClientId}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "https://api.meethue.com/oauth2/token?code={{AuthorizationCode}}&grant_type=authorization_code",
+							"protocol": "https",
+							"host": [
+								"api",
+								"meethue",
+								"com"
+							],
+							"path": [
+								"oauth2",
+								"token"
+							],
+							"query": [
+								{
+									"key": "code",
+									"value": "{{AuthorizationCode}}"
+								},
+								{
+									"key": "grant_type",
+									"value": "authorization_code"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Basic Auth Refresh Token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "a587f235-da21-4692-863b-556d322c75a5",
+								"exec": [
+									"// Get Access Token and Refresh Token from Response and Update Environment Variables\r",
+									"var json = JSON.parse(responseBody);\r",
+									"pm.environment.set(\"AccessToken\", json.access_token);\r",
+									"pm.environment.set(\"RefreshToken\", json.refresh_token);\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "{{ClientSecret}}",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "{{ClientId}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/x-www-form-urlencoded",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "refresh_token",
+									"value": "{{RefreshToken}}",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "https://api.meethue.com/oauth2/refresh?grant_type=refresh_token",
+							"protocol": "https",
+							"host": [
+								"api",
+								"meethue",
+								"com"
+							],
+							"path": [
+								"oauth2",
+								"refresh"
+							],
+							"query": [
+								{
+									"key": "grant_type",
+									"value": "refresh_token"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Digest Nonce",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"id": "ab84af47-bf42-4b07-9b0c-02857eee5277",
+								"exec": [
+									"// Get Nonce from Response Header if Present\r",
+									"pm.test(\"WWW-Authenticate is present\", function () {\r",
+									"    pm.response.to.have.header(\"WWW-Authenticate\");\r",
+									"    var wwwAuth = pm.response.headers.get('WWW-Authenticate');\r",
+									"\r",
+									"    var wwwAuthValues = {};\r",
+									"\r",
+									"    wwwAuth.split(\",\").map((part) => {\r",
+									"        var match = part.match(/^\\s?(.*)=\\\"(.*)\\\"/);\r",
+									"\r",
+									"        if (match !== null) {\r",
+									"            wwwAuthValues[match[1]] = match[2];\r",
+									"        }\r",
+									"    });\r",
+									"\r",
+									"    // Set Nonce to environment variable\r",
+									"    pm.environment.set(\"Nonce\", wwwAuthValues[\"nonce\"]);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "https://api.meethue.com/oauth2/token?code={{AuthorizationCode}}&grant_type=authorization_code",
+							"protocol": "https",
+							"host": [
+								"api",
+								"meethue",
+								"com"
+							],
+							"path": [
+								"oauth2",
+								"token"
+							],
+							"query": [
+								{
+									"key": "code",
+									"value": "{{AuthorizationCode}}"
+								},
+								{
+									"key": "grant_type",
+									"value": "authorization_code"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Digest Access Token",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "188c87d1-d42b-4e7d-87bf-d92817bf41a0",
+								"exec": [
+									"// Creating MD5 Hashes for Digest Response:\r",
+									"//HASH1\tMD5(“CLIENTID” + “:” + “REALM” + “:” + “CLIENTSECRET”)\r",
+									"//HASH2\tMD5(“VERB” + “:” + “PATH”)\r",
+									"//response\tMD5(HASH1 + “:” + “NONCE” + “:” + HASH2)\r",
+									"\r",
+									"var hash1 = pm.environment.get(\"ClientId\") + \":oauth2_client@api.meethue.com:\" + pm.environment.get(\"ClientSecret\");\r",
+									"var hash2 = (\"POST:/oauth2/token\");\r",
+									"\r",
+									"// Use CryptoJS\r",
+									"var hash1md5 = CryptoJS.MD5(hash1).toString();\r",
+									"var hash2md5 = CryptoJS.MD5(hash2).toString();\r",
+									"var response = (hash1md5 + \":\" + pm.environment.get(\"Nonce\") + \":\" + hash2md5);\r",
+									"var responsemd5 = CryptoJS.MD5(response).toString();\r",
+									"\r",
+									"// Set the new environment variable\r",
+									"pm.environment.set(\"ResponseMD5Hash\", responsemd5);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"id": "e25aac1f-4bfc-4e99-9c47-48017c7dd83f",
+								"exec": [
+									"// Get Nonce from Response Header if Present\r",
+									"pm.test(\"WWW-Authenticate is present\", function () {\r",
+									"    pm.response.to.have.header(\"WWW-Authenticate\");\r",
+									"    var wwwAuth = pm.response.headers.get('WWW-Authenticate');\r",
+									"\r",
+									"    var wwwAuthValues = {};\r",
+									"\r",
+									"    wwwAuth.split(\",\").map((part) => {\r",
+									"        var match = part.match(/^\\s?(.*)=\\\"(.*)\\\"/);\r",
+									"\r",
+									"        if (match !== null) {\r",
+									"            wwwAuthValues[match[1]] = match[2];\r",
+									"        }\r",
+									"    });\r",
+									"\r",
+									"    // Set Nonce to environment variable\r",
+									"    pm.environment.set(\"Nonce\", wwwAuthValues[\"nonce\"]);\r",
+									"});\r",
+									"\r",
+									"// Get Access Token and Refresh Token if Response is Valid\r",
+									"pm.test(\"Response is valid and have JSON body\", function () {\r",
+									"    // assert that the status code is 200\r",
+									"    pm.response.to.be.ok; // info, success, redirection, clientError,  serverError, are other variants\r",
+									"    // assert that the response has a valid JSON body\r",
+									"    pm.response.to.be.json;\r",
+									"\r",
+									"    // Get Access Token and Refresh Token from Response and Update Environment Variables\r",
+									"    var json = JSON.parse(responseBody);\r",
+									"    pm.environment.set(\"AccessToken\", json.access_token);\r",
+									"    pm.environment.set(\"RefreshToken\", json.refresh_token);\r",
+									"});\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Digest username=\"{{ClientId}}\", realm=\"oauth2_client@api.meethue.com\", nonce=\"{{Nonce}}\", uri=\"/oauth2/token\", response=\"{{ResponseMD5Hash}}\"",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "https://api.meethue.com/oauth2/token?code={{AuthorizationCode}}&grant_type=authorization_code",
+							"protocol": "https",
+							"host": [
+								"api",
+								"meethue",
+								"com"
+							],
+							"path": [
+								"oauth2",
+								"token"
+							],
+							"query": [
+								{
+									"key": "code",
+									"value": "{{AuthorizationCode}}"
+								},
+								{
+									"key": "grant_type",
+									"value": "authorization_code"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Digest Refresh Token",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"id": "188c87d1-d42b-4e7d-87bf-d92817bf41a0",
+								"exec": [
+									"// Creating MD5 Hashes for Digest Response:\r",
+									"//HASH1\tMD5(“CLIENTID” + “:” + “REALM” + “:” + “CLIENTSECRET”)\r",
+									"//HASH2\tMD5(“VERB” + “:” + “PATH”)\r",
+									"//response\tMD5(HASH1 + “:” + “NONCE” + “:” + HASH2)\r",
+									"\r",
+									"var hash1 = pm.environment.get(\"ClientId\") + \":oauth2_client@api.meethue.com:\" + pm.environment.get(\"ClientSecret\");\r",
+									"var hash2 = (\"POST:/oauth2/refresh\");\r",
+									"\r",
+									"// Use CryptoJS\r",
+									"var hash1md5 = CryptoJS.MD5(hash1).toString();\r",
+									"var hash2md5 = CryptoJS.MD5(hash2).toString();\r",
+									"var response = (hash1md5 + \":\" + pm.environment.get(\"Nonce\") + \":\" + hash2md5);\r",
+									"var responsemd5 = CryptoJS.MD5(response).toString();\r",
+									"\r",
+									"// Set the new environment variable\r",
+									"pm.environment.set(\"ResponseMD5Hash\", responsemd5);"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"id": "e25aac1f-4bfc-4e99-9c47-48017c7dd83f",
+								"exec": [
+									"// Get Nonce from Response Header if Present\r",
+									"pm.test(\"WWW-Authenticate is present\", function () {\r",
+									"    pm.response.to.have.header(\"WWW-Authenticate\");\r",
+									"    var wwwAuth = pm.response.headers.get('WWW-Authenticate');\r",
+									"\r",
+									"    var wwwAuthValues = {};\r",
+									"\r",
+									"    wwwAuth.split(\",\").map((part) => {\r",
+									"        var match = part.match(/^\\s?(.*)=\\\"(.*)\\\"/);\r",
+									"\r",
+									"        if (match !== null) {\r",
+									"            wwwAuthValues[match[1]] = match[2];\r",
+									"        }\r",
+									"    });\r",
+									"\r",
+									"    // Set Nonce to environment variable\r",
+									"    pm.environment.set(\"Nonce\", wwwAuthValues[\"nonce\"]);\r",
+									"});\r",
+									"\r",
+									"// Get Access Token and Refresh Token if Response is Valid\r",
+									"pm.test(\"Response is valid and have JSON body\", function () {\r",
+									"    // assert that the status code is 200\r",
+									"    pm.response.to.be.ok; // info, success, redirection, clientError,  serverError, are other variants\r",
+									"    // assert that the response has a valid JSON body\r",
+									"    pm.response.to.be.json;\r",
+									"\r",
+									"    // Get Access Token and Refresh Token from Response and Update Environment Variables\r",
+									"    var json = JSON.parse(responseBody);\r",
+									"    pm.environment.set(\"AccessToken\", json.access_token);\r",
+									"    pm.environment.set(\"RefreshToken\", json.refresh_token);\r",
+									"});\r",
+									"\r",
+									"\r",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/x-www-form-urlencoded",
+								"type": "text"
+							},
+							{
+								"key": "Authorization",
+								"value": "Digest username=\"{{ClientId}}\", realm=\"oauth2_client@api.meethue.com\", nonce=\"{{Nonce}}\", uri=\"/oauth2/refresh\", response=\"{{ResponseMD5Hash}}\"",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "urlencoded",
+							"urlencoded": [
+								{
+									"key": "refresh_token",
+									"value": "{{RefreshToken}}",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "https://api.meethue.com/oauth2/refresh?grant_type=refresh_token",
+							"protocol": "https",
+							"host": [
+								"api",
+								"meethue",
+								"com"
+							],
+							"path": [
+								"oauth2",
+								"refresh"
+							],
+							"query": [
+								{
+									"key": "grant_type",
+									"value": "refresh_token"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Postman Oauth2 Access Token",
+					"request": {
+						"auth": {
+							"type": "oauth2",
+							"oauth2": [
+								{
+									"key": "accessToken",
+									"value": "...",
+									"type": "string"
+								},
+								{
+									"key": "tokenType",
+									"value": "BearerToken",
+									"type": "string"
+								},
+								{
+									"key": "addTokenTo",
+									"value": "header",
+									"type": "string"
+								},
+								{
+									"key": "callBackUrl",
+									"type": "any"
+								},
+								{
+									"key": "authUrl",
+									"type": "any"
+								},
+								{
+									"key": "accessTokenUrl",
+									"type": "any"
+								},
+								{
+									"key": "clientId",
+									"type": "any"
+								},
+								{
+									"key": "clientSecret",
+									"type": "any"
+								},
+								{
+									"key": "clientAuth",
+									"type": "any"
+								},
+								{
+									"key": "grantType",
+									"type": "any"
+								},
+								{
+									"key": "scope",
+									"type": "any"
+								},
+								{
+									"key": "username",
+									"type": "any"
+								},
+								{
+									"key": "password",
+									"type": "any"
+								},
+								{
+									"key": "redirectUri",
+									"type": "any"
+								},
+								{
+									"key": "refreshToken",
+									"type": "any"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "https://api.meethue.com/bridge/config",
+							"protocol": "https",
+							"host": [
+								"api",
+								"meethue",
+								"com"
+							],
+							"path": [
+								"bridge",
+								"config"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Remote Config",
+			"item": [
+				{
+					"name": "Enable Link Button",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "Bearer {{AccessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{ \"linkbutton\":true }"
+						},
+						"url": {
+							"raw": "https://api.meethue.com/bridge/0/config",
+							"protocol": "https",
+							"host": [
+								"api",
+								"meethue",
+								"com"
+							],
+							"path": [
+								"bridge",
+								"0",
+								"config"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Add Whitelist Identifier",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "Bearer {{AccessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{ \"devicetype\": \"your_client_name_postman_remote\"}"
+						},
+						"url": {
+							"raw": "https://api.meethue.com/bridge/",
+							"protocol": "https",
+							"host": [
+								"api",
+								"meethue",
+								"com"
+							],
+							"path": [
+								"bridge",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Get Config",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "Bearer {{AccessToken}}"
+							}
+						],
+						"url": {
+							"raw": "https://api.meethue.com/bridge/{{username}}/config",
+							"protocol": "https",
+							"host": [
+								"api",
+								"meethue",
+								"com"
+							],
+							"path": [
+								"bridge",
+								"{{username}}",
+								"config"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Remote Lights",
+			"item": [
+				{
+					"name": "Get Lights Remote",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "Bearer {{AccessToken}}"
+							}
+						],
+						"url": {
+							"raw": "https://api.meethue.com/bridge/{{username}}/lights/",
+							"protocol": "https",
+							"host": [
+								"api",
+								"meethue",
+								"com"
+							],
+							"path": [
+								"bridge",
+								"{{username}}",
+								"lights",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Turn Light Off Remote",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "Bearer {{AccessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"on\":false}"
+						},
+						"url": {
+							"raw": "https://api.meethue.com/bridge/{{username}}/lights/1/state",
+							"protocol": "https",
+							"host": [
+								"api",
+								"meethue",
+								"com"
+							],
+							"path": [
+								"bridge",
+								"{{username}}",
+								"lights",
+								"1",
+								"state"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Turn Light On Remote",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "Bearer {{AccessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"on\":true}"
+						},
+						"url": {
+							"raw": "https://api.meethue.com/bridge/{{username}}/lights/1/state",
+							"protocol": "https",
+							"host": [
+								"api",
+								"meethue",
+								"com"
+							],
+							"path": [
+								"bridge",
+								"{{username}}",
+								"lights",
+								"1",
+								"state"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Custom Light State",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"type": "text",
+								"value": "Bearer {{AccessToken}}"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"on\":true,\r\n        \"xy\": [\r\n            0.278757,\r\n            0.329774\r\n        ],\r\n  \"bri\":192,\r\n  \"transitiontime\": 0\r\n}"
+						},
+						"url": {
+							"raw": "https://api.meethue.com/bridge/{{username}}/lights/12/state",
+							"protocol": "https",
+							"host": [
+								"api",
+								"meethue",
+								"com"
+							],
+							"path": [
+								"bridge",
+								"{{username}}",
+								"lights",
+								"12",
+								"state"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Remote Groups",
+			"item": [
+				{
+					"name": "Get Groups Remote",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{AccessToken}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "https://api.meethue.com/bridge/{{username}}/groups/",
+							"protocol": "https",
+							"host": [
+								"api",
+								"meethue",
+								"com"
+							],
+							"path": [
+								"bridge",
+								"{{username}}",
+								"groups",
+								""
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Turn Group Light Off Remote",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{AccessToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"on\":false}"
+						},
+						"url": {
+							"raw": "https://api.meethue.com/bridge/{{username}}/groups/2/action",
+							"protocol": "https",
+							"host": [
+								"api",
+								"meethue",
+								"com"
+							],
+							"path": [
+								"bridge",
+								"{{username}}",
+								"groups",
+								"2",
+								"action"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Turn Group Light On Remote",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{AccessToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"on\":true}"
+						},
+						"url": {
+							"raw": "https://api.meethue.com/bridge/{{username}}/groups/2/action",
+							"protocol": "https",
+							"host": [
+								"api",
+								"meethue",
+								"com"
+							],
+							"path": [
+								"bridge",
+								"{{username}}",
+								"groups",
+								"2",
+								"action"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Set Group Light Scene Remote",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{AccessToken}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\"bri\": 144, \"ct\": 443}"
+						},
+						"url": {
+							"raw": "https://api.meethue.com/bridge/{{username}}/groups/2/action",
+							"protocol": "https",
+							"host": [
+								"api",
+								"meethue",
+								"com"
+							],
+							"path": [
+								"bridge",
+								"{{username}}",
+								"groups",
+								"2",
+								"action"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}
